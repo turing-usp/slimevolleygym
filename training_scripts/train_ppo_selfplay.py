@@ -7,23 +7,22 @@ import gym
 import slimevolleygym
 import numpy as np
 
-from stable_baselines.ppo1 import PPO1
-from stable_baselines.common.policies import MlpPolicy
-from stable_baselines import logger
-from stable_baselines.common.callbacks import EvalCallback
+from stable_baselines3.ppo import PPO
+# from stable_baselines3 import logger
+from stable_baselines3.common.callbacks import EvalCallback
 
 from shutil import copyfile # keep track of generations
 
 # Settings
 SEED = 17
 NUM_TIMESTEPS = int(1e9)
-EVAL_FREQ = int(1e5)
-EVAL_EPISODES = int(1e2)
-BEST_THRESHOLD = 0.5 # must achieve a mean score above this to replace prev best self
+EVAL_FREQ = int(1e4)
+EVAL_EPISODES = int(2e1)
+BEST_THRESHOLD = 0.3 # must achieve a mean score above this to replace prev best self
 
 RENDER_MODE = False # set this to false if you plan on running for full 1000 trials.
 
-LOGDIR = "ppo1_selfplay"
+LOGDIR = "log_dir"
 
 class SlimeVolleySelfPlayEnv(slimevolleygym.SlimeVolleyEnv):
   # wrapper over the normal single player env, but loads the best self play model
@@ -49,7 +48,7 @@ class SlimeVolleySelfPlayEnv(slimevolleygym.SlimeVolleyEnv):
         self.best_model_filename = filename
         if self.best_model is not None:
           del self.best_model
-        self.best_model = PPO1.load(filename, env=self)
+        self.best_model = PPO.load(filename, env=self)
     return super(SlimeVolleySelfPlayEnv, self).reset()
 
 class SelfPlayCallback(EvalCallback):
@@ -92,14 +91,14 @@ def rollout(env, policy):
 
 def train():
   # train selfplay agent
-  logger.configure(folder=LOGDIR)
+  # logger.configure(folder=LOGDIR)
 
   env = SlimeVolleySelfPlayEnv()
   env.seed(SEED)
 
   # take mujoco hyperparams (but doubled timesteps_per_actorbatch to cover more steps.)
-  model = PPO1(MlpPolicy, env, timesteps_per_actorbatch=4096, clip_param=0.2, entcoeff=0.0, optim_epochs=10,
-                   optim_stepsize=3e-4, optim_batchsize=64, gamma=0.99, lam=0.95, schedule='linear', verbose=2)
+  model = PPO('MlpPolicy', env, n_steps=512, batch_size=32, ent_coef=0.005, n_epochs=5,
+                   learning_rate=3e-4, clip_range=0.2, gamma=0.99, gae_lambda=0.95, verbose=2)
 
   eval_callback = SelfPlayCallback(env,
     best_model_save_path=LOGDIR,

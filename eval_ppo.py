@@ -17,8 +17,7 @@ import numpy as np
 import argparse
 
 import slimevolleygym
-from stable_baselines.common.policies import MlpPolicy
-from stable_baselines import PPO1
+from stable_baselines3 import PPO
 
 def rollout(env, policy, render_mode=False):
   """ play one agent vs the other in modified gym-style loop. """
@@ -43,7 +42,7 @@ if __name__=="__main__":
 
   parser = argparse.ArgumentParser(description='Evaluate pre-trained PPO agent.')
   parser.add_argument('--model-path', help='path to stable-baselines model.',
-                        type=str, default="zoo/ppo/best_model.zip")
+                        type=str, default="log_dir/best_model.zip")
   parser.add_argument('--render', action='store_true', help='render to screen?', default=False)
 
   args = parser.parse_args()
@@ -53,7 +52,7 @@ if __name__=="__main__":
 
   # the yellow agent:
   print("Loading", args.model_path)
-  policy = PPO1.load(args.model_path, env=env) # 96-core PPO1 policy
+  policy = PPO.load(args.model_path, env=env) # 96-core PPO1 policy
 
   history = []
   for i in range(1000):
